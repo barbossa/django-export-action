@@ -6,6 +6,8 @@ from collections import namedtuple
 from itertools import chain
 import csv
 import re
+from datetime import datetime
+import string
 
 from django.http import HttpResponse
 from django.utils.text import force_text
@@ -25,13 +27,17 @@ from .introspection import get_model_from_path_string
 DisplayField = namedtuple("DisplayField", "path field")
 
 
+def safe_file_name(name):
+    valid_characters = "-_.()%s%s" % (string.ascii_letters, string.digits)
+    return ''.join(c if c in valid_characters else '_' for c in name)
+
+
 def generate_filename(title, ends_with):
     title = title.split('.')[0]
-    title.replace(' ', '_')
     title += ('_' + timezone.now().strftime("%Y-%m-%d_%H%M"))
     if not title.endswith(ends_with):
         title += ends_with
-    return title
+    return safe_file_name(title)
 
 
 def _can_change_or_view(model, user):
@@ -177,9 +183,11 @@ def list_to_xlsx_response(data, title='report', header=None,
 
 
 def list_to_csv_response(data, title='report', header=None, widths=None):
-    """ Make 2D list into a csv response for download data.
-    """
+    """Make 2D list into a csv response for download data."""
+
+    title = generate_filename(title, '.csv')
     response = HttpResponse(content_type="text/csv; charset=UTF-8")
+    response['Content-Disposition'] = 'attachment; filename={0}'.format(title)
     cw = csv.writer(response)
     for row in chain([header] if header else [], data):
         cw.writerow([force_text(s).encode(response.charset) for s in row])

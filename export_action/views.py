@@ -56,13 +56,14 @@ class AdminExport(TemplateView):
             fields,
             self.request.user,
         )
+        filename_title = str(context['opts'].verbose_name_plural)
         format = request.POST.get("__format")
         if format == "html":
-            return report.list_to_html_response(data_list, header=fields)
+            return report.list_to_html_response(data=data_list, title=filename_title, header=fields)
         elif format == "csv":
-            return report.list_to_csv_response(data_list, header=fields)
+            return report.list_to_csv_response(data=data_list, title=filename_title, header=fields)
         else:
-            return report.list_to_xlsx_response(data_list, header=fields)
+            return report.list_to_xlsx_response(data=data_list, title=filename_title, header=fields)
 
     def get(self, request, *args, **kwargs):
         if request.GET.get("related", request.POST.get("related")):  # Dispatch to the other view
